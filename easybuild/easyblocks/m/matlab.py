@@ -42,7 +42,8 @@ from easybuild.tools import LooseVersion
 from easybuild.easyblocks.generic.packedbinary import PackedBinary
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import adjust_permissions, change_dir, copy_file, read_file, write_file, remove_file, search_file
+from easybuild.tools.filetools import (
+    adjust_permissions, change_dir, copy_file, read_file, write_file, remove_file, search_file)
 from easybuild.tools.run import run_shell_cmd
 
 
