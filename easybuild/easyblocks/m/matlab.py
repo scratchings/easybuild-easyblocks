@@ -42,7 +42,7 @@ from easybuild.tools import LooseVersion
 from easybuild.easyblocks.generic.packedbinary import PackedBinary
 from easybuild.framework.easyconfig import CUSTOM
 from easybuild.tools.build_log import EasyBuildError
-from easybuild.tools.filetools import adjust_permissions, change_dir, copy_file, read_file, write_file
+from easybuild.tools.filetools import adjust_permissions, change_dir, copy_file, read_file, write_file, remove_file, search_file
 from easybuild.tools.py2vs3 import string_type
 from easybuild.tools.run import run_cmd
 
@@ -62,6 +62,8 @@ class EB_MATLAB(PackedBinary):
         extra_vars = {
             'java_options': ['-Xmx256m', "$_JAVA_OPTIONS value set for install and in module file.", CUSTOM],
             'key': [None, "Installation key(s), make one install for each key. Single key or a list of keys", CUSTOM],
+            'clean_syslibs': [
+                False, "Remove MATLAB shipped 'system' libraries that conflict with newer versions", CUSTOM],
         }
         return PackedBinary.extra_options(extra_vars)
 
@@ -142,6 +144,14 @@ class EB_MATLAB(PackedBinary):
         if LooseVersion(self.version) >= LooseVersion('2016b'):
             change_dir(self.builddir)
 
+        # Remove legacy libstdc++ shipped with MATLAB
+        for leg_stdcpp in search_file(
+                paths=[
+                    os.path.join('sys', 'os', 'glnxa64'),
+                    os.path.join('bin', 'glnxa64'),],
+                query=br"libstc++\.so.*"):
+            remove_file(leg_stdcpp)
+
         # Build the cmd string
         cmdlist = [
             self.cfg['preinstallopts'],
@@ -208,6 +218,12 @@ class EB_MATLAB(PackedBinary):
                     if regex.search(f.read()):
                         raise EasyBuildError("Found error pattern '%s' in output file of installer at %s",
                                              regex.pattern, self.outputfile)
+
+        # Remove legacy libstdc++ library from installed version
+        for leg_stdcpp in search_file(
+                paths=[self.installdir.encode('utf-8')],
+                query=br"libstc++\.so.*"):
+            remove_file(leg_stdcpp)
 
     def sanity_check_step(self):
         """Custom sanity check for MATLAB."""
